@@ -1,32 +1,34 @@
-const fs = require('fs/promises')
-
-const file = fs.readFile('./short_train.csv')
-
 const { MongoClient } = require('mongodb');
-// or as an es module:
-// import { MongoClient } from 'mongodb'
+const csvtojson = require("csvtojson");
+const mongodb = require("mongodb").MongoClient;
+const readline = require('readline-sync')
+const name = readline.question('csv:')
+
 
 // Connection URL
 const url = 'mongodb://localhost:27017';
 const client = new MongoClient(url);
 
 // Database Name
-const dbName = 'myProject';
+const dbName = 'Project';
 
-async function main() {
-    // Use connect method to connect to the server
-    await client.connect();
-    console.log('Connected successfully to server');
-    const db = client.db(dbName);
-    const collection = db.collection('documents');
+csvtojson()
+    .fromFile(name)
+    .then(csvData => {
+        console.log(csvData);
 
-    const insertResult = await collection.insertMany([file]);
-    console.log('Inserted documents =>', insertResult);
+        mongodb.connect(
+            url,
+            (err, client) => {
+                if (err) throw err;
 
-    return 'done.';
-}
-
-main()
-    .then(console.log)
-    .catch(console.error)
-    .finally(() => client.close());
+                client
+                    .db("Project")
+                    .collection("documents")
+                    .insertMany(csvData, (err, res) => {
+                        if (err) throw err;
+                        client.close();
+                    });
+            }
+        );
+    });
